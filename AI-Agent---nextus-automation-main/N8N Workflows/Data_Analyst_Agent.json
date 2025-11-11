@@ -1,0 +1,294 @@
+{
+  "name": "Data Analyst Agent",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "fe9b45a4-147d-4da3-92ca-51ee1bd13492",
+      "name": "Chat Trigger",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "position": [
+        720,
+        160
+      ],
+      "webhookId": "cd05f517-9aec-4e7d-bba8-3747bc8f5ddb",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Chat Trigger').item.json.sessionId }}",
+        "contextWindowLength": 10
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        1680,
+        440
+      ],
+      "id": "9f86a1be-0ccf-420f-af6a-c72c945760ee",
+      "name": "Window Buffer Memory"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c5d1f5ab-91dd-4067-ad51-7707ef1ec8bb",
+              "name": "columns",
+              "value": "={{ $json.columns.map(item => item.title).toJsonString() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1320,
+        160
+      ],
+      "id": "428a2084-5c58-4aec-9a71-f65316cf400e",
+      "name": "Extract_Columns"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "getAll",
+        "workspaceId": "wp5m5rls",
+        "projectId": "pcyp2h7n9olnhjc",
+        "table": "={{ $('Settings').item.json.table_id }}",
+        "options": {
+          "where": "={{ $fromAI('filter_formula','formula to filter.  for example, (Ticker,eq,IMMR) will filter for Ticker column equal to IMMR.  the operators are neq for not equal, gt for greater than, etc.  Compound conditions can be expressed like (MCAP,gt,500000000)~or(MCAP,lt,1000000000)') }}"
+        }
+      },
+      "type": "n8n-nodes-base.nocoDbTool",
+      "typeVersion": 3,
+      "position": [
+        2080,
+        440
+      ],
+      "id": "e2d2d8f2-ceda-4cc4-849a-c04afed67ffc",
+      "name": "NocoDB",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "RlsSpm7HK82D2h78",
+          "name": "NocoDB Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "968e6040-5ff3-40d1-901a-ba1fa7576c0c",
+              "name": "table_id",
+              "value": "mc28pt7pnfogsxj",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        920,
+        160
+      ],
+      "id": "441e0a60-7e39-4ad6-90c9-4212e955c1c1",
+      "name": "Settings"
+    },
+    {
+      "parameters": {
+        "url": "=https://app.nocodb.com/api/v2/meta/tables/{{ $json.table_id }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "nocoDbApiToken",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1120,
+        160
+      ],
+      "id": "a27d0955-d21c-41c7-a293-94363a8237a0",
+      "name": "nocodb_extract_table",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "RlsSpm7HK82D2h78",
+          "name": "NocoDB Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Chat Trigger').item.json.chatInput }}",
+        "options": {
+          "systemMessage": "=You are a helpful Data Analyst assistant who is skilled at working with a database called nocodb.  \n\nYou goal is to help the user understand the table that is specified.\n\nHere are the column names for the table.\n{{ $json.columns }}\n\nIf you generate a chart you should also know that You are a visualization expert. When provided with a chart URL, return it using Markdown so that the chart image displays inline.Example format:\n![Generated Chart](chart_url)\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        1580,
+        160
+      ],
+      "id": "4d2828a6-94dc-4bbb-8f16-b4b4d0a5cd12",
+      "name": "Data Analyst Agent"
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [
+        1520,
+        440
+      ],
+      "id": "4be108de-0431-4a59-8c2b-b006ba613d20",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "vX5FeLdMQ9wUQoaq",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "visual",
+        "description": "=Call this tool when necessary to create a chart. All string values must be properly escaped, especially for multi-line strings. When processing the output of the tool, URLs returned should always be in markdown format.",
+        "workflowId": {
+          "__rl": true,
+          "value": "gH7v6gtKLhYPOT8M",
+          "mode": "list",
+          "cachedResultName": "Chart Display"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.1,
+      "position": [
+        1860,
+        460
+      ],
+      "id": "06735d42-fa2f-4632-9605-11dbf50246fc",
+      "name": "Call n8n Workflow Tool",
+      "notesInFlow": false
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Chat Trigger": {
+      "main": [
+        [
+          {
+            "node": "Settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Window Buffer Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Data Analyst Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract_Columns": {
+      "main": [
+        [
+          {
+            "node": "Data Analyst Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "NocoDB": {
+      "ai_tool": [
+        [
+          {
+            "node": "Data Analyst Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Settings": {
+      "main": [
+        [
+          {
+            "node": "nocodb_extract_table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "nocodb_extract_table": {
+      "main": [
+        [
+          {
+            "node": "Extract_Columns",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Data Analyst Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call n8n Workflow Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "Data Analyst Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "f8b56e72-ee85-43ac-a5fb-490fdae9b791",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "71ab28f7d7f2514b40793eeea846fa47e37a01971ff2cf9cdea09c72ce4266a9"
+  },
+  "id": "pXsfHj4vzUVBxNlC",
+  "tags": []
+}

@@ -1,0 +1,413 @@
+{
+  "name": "LinkedIn Agent - HR Agent 2",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "1fc1a2a4-f841-443d-9ef6-5c7751118291",
+      "name": "When clicking ‘Test workflow’",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        0,
+        0
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "url": "https://fresh-linkedin-profile-data.p.rapidapi.com/get-linkedin-profile",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "linkedin_url",
+              "value": "={{ $json[\"Linkedin Profile\"] }}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-rapidapi-key",
+              "value": "fc282bbdf7msh016eb5edfc83a80p185b57jsn73d4318c5da9"
+            },
+            {
+              "name": "x-rapidapi-host",
+              "value": "fresh-linkedin-profile-data.p.rapidapi.com"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "75ce43c3-6ed6-45ff-8a86-ad53b165fac0",
+      "name": "Call Rapid API",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        880,
+        0
+      ],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "5907d2f7-b15d-41cc-8fee-45631bb874e1",
+              "operator": {
+                "type": "string",
+                "operation": "empty",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.about }}",
+              "rightValue": ""
+            },
+            {
+              "id": "2857554e-a635-43d3-bf9e-a617b85009ca",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.linkedin_url }}",
+              "rightValue": ""
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "31799904-d5d3-4c7b-9ebc-2fd050eb4e13",
+      "name": "Filter already enriched",
+      "type": "n8n-nodes-base.filter",
+      "position": [
+        440,
+        0
+      ],
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "fd914708-c85f-4c0e-a277-d8164c616699",
+              "name": "Linkedin Profile",
+              "type": "string",
+              "value": "={{ encodeURI($json.linkedin_url) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "6b36eb5b-672e-4729-95a2-f5a3e2c2eb42",
+      "name": "Encode URI",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        660,
+        0
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Initialize an empty object to store filtered items\nlet filteredData = {};\n\n// Loop through each item in $input.item.json.data\nfor (const item in $input.item.json.data) {\n  // Check if the item is not an array\n  if (!Array.isArray($input.item.json.data[item])) {\n    // Add the item to the filteredData object\n    filteredData[item] = $input.item.json.data[item];\n  }\n}\nfilteredData['row_number'] = $('Pull linkedin profiles').first().json.row_number\n// Return the filteredData array\nreturn filteredData;"
+      },
+      "id": "8ee74fdc-8acb-4094-8c88-36fc94165f16",
+      "name": "FiIter out all arrays",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1100,
+        0
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1fwTncOstgA87F7CA6LwzbMpsdDOzvm6GhdnnFplT9xI",
+          "mode": "list",
+          "cachedResultName": "LinkdIn Profiles",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1fwTncOstgA87F7CA6LwzbMpsdDOzvm6GhdnnFplT9xI/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1fwTncOstgA87F7CA6LwzbMpsdDOzvm6GhdnnFplT9xI/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Full Name": "={{ $json.full_name }}",
+            "Job Title": "={{ $json.job_title }}",
+            "Location": "={{ $json.location }}",
+            "Company": "={{ $json.company }}",
+            "Phone": "={{ $json.phone }}",
+            "Followers": "={{ $json.follower_count }}",
+            "College": "={{ $json.school }}",
+            "Degree": "={{ $('Call Rapid API').item.json.data.educations[0].degree }}",
+            "Marks": "={{ $('Call Rapid API').item.json.data.educations[0].activities }}",
+            "About": "={{ $json.about }}",
+            "linkedin_url": "={{ $json.linkedin_url }}"
+          },
+          "matchingColumns": [
+            "linkedin_url"
+          ],
+          "schema": [
+            {
+              "id": "linkedin_url",
+              "displayName": "linkedin_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Full Name",
+              "displayName": "Full Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Location",
+              "displayName": "Location",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Job Title",
+              "displayName": "Job Title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Company",
+              "displayName": "Company",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Phone",
+              "displayName": "Phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Followers",
+              "displayName": "Followers",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "College",
+              "displayName": "College",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Degree",
+              "displayName": "Degree",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Marks",
+              "displayName": "Marks",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "About",
+              "displayName": "About",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "c3c844c0-1e50-4897-9075-a5c7bd0b41e0",
+      "name": "Update the profile",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        1320,
+        0
+      ],
+      "typeVersion": 4.5,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "SDIBS9Lf4lBMTWwE",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1fwTncOstgA87F7CA6LwzbMpsdDOzvm6GhdnnFplT9xI",
+          "mode": "list",
+          "cachedResultName": "LinkdIn Profiles",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1fwTncOstgA87F7CA6LwzbMpsdDOzvm6GhdnnFplT9xI/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1fwTncOstgA87F7CA6LwzbMpsdDOzvm6GhdnnFplT9xI/edit#gid=0"
+        },
+        "options": {}
+      },
+      "id": "8302d82b-c5b8-406f-9db0-10be2642e35c",
+      "name": "Pull linkedin profiles",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        220,
+        0
+      ],
+      "typeVersion": 4.5,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "SDIBS9Lf4lBMTWwE",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Encode URI": {
+      "main": [
+        [
+          {
+            "node": "Call Rapid API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call Rapid API": {
+      "main": [
+        [
+          {
+            "node": "FiIter out all arrays",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FiIter out all arrays": {
+      "main": [
+        [
+          {
+            "node": "Update the profile",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pull linkedin profiles": {
+      "main": [
+        [
+          {
+            "node": "Filter already enriched",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter already enriched": {
+      "main": [
+        [
+          {
+            "node": "Encode URI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Test workflow’": {
+      "main": [
+        [
+          {
+            "node": "Pull linkedin profiles",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "707078ab-6c89-4d9e-91c8-884b6651e097",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "71ab28f7d7f2514b40793eeea846fa47e37a01971ff2cf9cdea09c72ce4266a9"
+  },
+  "id": "BTLw0U1yiDsYe3N4",
+  "tags": []
+}

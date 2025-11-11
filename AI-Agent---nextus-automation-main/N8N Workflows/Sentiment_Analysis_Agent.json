@@ -1,0 +1,857 @@
+{
+  "name": "Sentiment Analysis Agent",
+  "nodes": [
+    {
+      "parameters": {
+        "fieldToSplitOut": "Review",
+        "options": {}
+      },
+      "id": "095a8e10-1630-4a1a-b6c9-7950ae1ed803",
+      "name": "Split Out",
+      "type": "n8n-nodes-base.splitOut",
+      "position": [
+        740,
+        340
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "text": "=You need to extract the review from the following HTML:  {{ $json.Review }} give all information in english if its not in english translate it and give",
+        "attributes": {
+          "attributes": [
+            {
+              "name": "Author",
+              "description": "Extract the name of the review author",
+              "required": true
+            },
+            {
+              "name": "Rating",
+              "type": "number",
+              "description": "Extract the rating given to the review (from 1 to 5)",
+              "required": true
+            },
+            {
+              "name": "Date",
+              "description": "Extract review date in YYYY-MM-DD format",
+              "required": true
+            },
+            {
+              "name": "Title",
+              "description": "Extract the review title",
+              "required": true
+            },
+            {
+              "name": "Critiques",
+              "description": "Extract the review text in english",
+              "required": true
+            },
+            {
+              "name": "No of Reviews",
+              "type": "number",
+              "description": "Extract the total number of reviews made by the user",
+              "required": true
+            },
+            {
+              "name": "Location",
+              "description": "Extract the country of the user who wrote the review. Must be two characters",
+              "required": true
+            }
+          ]
+        },
+        "options": {
+          "systemPromptTemplate": "You are a review expert. You need to extract only the required information and report it without changing anything.\nAll the required information is in the text give all information in english."
+        }
+      },
+      "id": "6ff4dd9d-eedd-4d84-b13a-b3c0db717409",
+      "name": "Information Extractor",
+      "type": "@n8n/n8n-nodes-langchain.informationExtractor",
+      "position": [
+        2320,
+        140
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "ab666549-4eec-40e2-a702-0575c094a2d4",
+              "operator": {
+                "type": "string",
+                "operation": "empty",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.Assesment }}",
+              "rightValue": "={{ $('Split Out').item.json.recensioni.replace('/reviews/','') }}"
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "0036f3b1-4832-4a35-8694-0893475a4119",
+      "name": "If",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1580,
+        380
+      ],
+      "executeOnce": false,
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {},
+      "id": "5423b55d-eb6c-41c6-9b26-410e3c92b85d",
+      "name": "When clicking ‘Test workflow’",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        -20,
+        340
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "maxItems": 10
+      },
+      "id": "506cdaa1-e0ba-4f29-b137-69d321b13c94",
+      "name": "Limit1",
+      "type": "n8n-nodes-base.limit",
+      "position": [
+        900,
+        340
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "556e201d-242a-4c0e-bc13-787c2b60f800",
+              "name": "company_id",
+              "type": "string",
+              "value": "www.amazon.com"
+            },
+            {
+              "id": "a1f239df-df08-41d8-8b78-d6502266a581",
+              "name": "max_page",
+              "type": "number",
+              "value": 2
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "52757ade-4206-40f9-bf4f-c3aefb004d2e",
+      "name": "Set Parameters",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        180,
+        340
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "url": "=https://it.trustpilot.com/review/{{ $json.company_id }}",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "sort",
+              "value": "recency"
+            }
+          ]
+        },
+        "options": {
+          "pagination": {
+            "pagination": {
+              "parameters": {
+                "parameters": [
+                  {
+                    "name": "page",
+                    "value": "={{ $pageCount + 1 }}"
+                  }
+                ]
+              },
+              "limitPagesFetched": true,
+              "maxRequests": "={{ $json.max_page }}",
+              "requestInterval": 5000
+            }
+          }
+        }
+      },
+      "id": "cd7e9d36-7ecd-4d9c-b552-8f46b0cfcc03",
+      "name": "Get reviews",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        360,
+        340
+      ],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "operation": "extractHtmlContent",
+        "extractionValues": {
+          "values": [
+            {
+              "key": "Review",
+              "cssSelector": "article section a",
+              "returnValue": "attribute",
+              "attribute": "href",
+              "returnArray": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "476ff7b6-ab30-4674-a7fe-b032128ee51a",
+      "name": "Extract",
+      "type": "n8n-nodes-base.html",
+      "position": [
+        560,
+        340
+      ],
+      "typeVersion": 1.2
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1HkLv4a8VR6N4hiDYAGRZL3Aq0cWHMbzNuADBa0aoEeA",
+          "mode": "list",
+          "cachedResultName": "Reviews and Sentiment Analysis",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1HkLv4a8VR6N4hiDYAGRZL3Aq0cWHMbzNuADBa0aoEeA/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1HkLv4a8VR6N4hiDYAGRZL3Aq0cWHMbzNuADBa0aoEeA/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Id ",
+              "lookupValue": "={{ $('Split Out').item.json.Review.replace('/reviews/','') }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a2a35455-7d3e-4c4c-aa66-6cbbd48d867a",
+      "name": "Get rows",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        1380,
+        140
+      ],
+      "typeVersion": 4.5,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "SDIBS9Lf4lBMTWwE",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1HkLv4a8VR6N4hiDYAGRZL3Aq0cWHMbzNuADBa0aoEeA",
+          "mode": "list",
+          "cachedResultName": "Reviews and Sentiment Analysis",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1HkLv4a8VR6N4hiDYAGRZL3Aq0cWHMbzNuADBa0aoEeA/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1HkLv4a8VR6N4hiDYAGRZL3Aq0cWHMbzNuADBa0aoEeA/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Id ": "={{ $('Split Out').item.json.Review.replace('/reviews/','') }}"
+          },
+          "matchingColumns": [
+            "Id "
+          ],
+          "schema": [
+            {
+              "id": "Id ",
+              "displayName": "Id ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Date",
+              "displayName": "Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Title",
+              "displayName": "Title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Review",
+              "displayName": "Review",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Location",
+              "displayName": "Location",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Critiques",
+              "displayName": "Critiques",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "URL",
+              "displayName": "URL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Assesment",
+              "displayName": "Assesment",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Sentiment",
+              "displayName": "Sentiment",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "2d507fe6-a4fc-42ff-97ff-dfd552c651ab",
+      "name": "Get Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        1160,
+        140
+      ],
+      "executeOnce": false,
+      "typeVersion": 4.5,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "SDIBS9Lf4lBMTWwE",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://it.trustpilot.com{{ $('Split Out').item.json.Review }}",
+        "options": {}
+      },
+      "id": "0a1fab6e-96b7-403b-884e-f67be6e23fa5",
+      "name": "Get Single review",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        1860,
+        360
+      ],
+      "typeVersion": 4.2,
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "operation": "extractHtmlContent",
+        "extractionValues": {
+          "values": [
+            {
+              "key": "Review",
+              "cssSelector": "article",
+              "returnArray": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "7d322d76-1032-405a-9d46-2958761a184d",
+      "name": "Extract review",
+      "type": "n8n-nodes-base.html",
+      "position": [
+        2100,
+        360
+      ],
+      "typeVersion": 1.2
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1HkLv4a8VR6N4hiDYAGRZL3Aq0cWHMbzNuADBa0aoEeA",
+          "mode": "list",
+          "cachedResultName": "Reviews and Sentiment Analysis",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1HkLv4a8VR6N4hiDYAGRZL3Aq0cWHMbzNuADBa0aoEeA/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1HkLv4a8VR6N4hiDYAGRZL3Aq0cWHMbzNuADBa0aoEeA/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "URL": "=https://it.trustpilot.com{{ $('Split Out').item.json.Review }}",
+            "Sentiment": "={{ $json.sentimentAnalysis.category }}",
+            "Id ": "={{ $('Split Out').item.json.Review.replace('/reviews/','') }}",
+            "Name": "={{ $('Information Extractor').item.json.output.Author }}",
+            "Date": "={{ $('Information Extractor').item.json.output.Date }}",
+            "Title": "={{ $('Information Extractor').item.json.output.Title }}",
+            "Location": "={{ $json.output.Location }}",
+            "Critiques": "={{ $json.output.Critiques }}",
+            "Review": "={{ $json.output.Rating }}"
+          },
+          "matchingColumns": [
+            "Id "
+          ],
+          "schema": [
+            {
+              "id": "Id ",
+              "displayName": "Id ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Date",
+              "displayName": "Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Title",
+              "displayName": "Title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Review",
+              "displayName": "Review",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Location",
+              "displayName": "Location",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Critiques",
+              "displayName": "Critiques",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "URL",
+              "displayName": "URL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Assesment",
+              "displayName": "Assesment",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Sentiment",
+              "displayName": "Sentiment",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "952484e5-8e87-4eb3-99a6-5bf26c701ba8",
+      "name": "Update sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        3240,
+        140
+      ],
+      "typeVersion": 4.5,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "SDIBS9Lf4lBMTWwE",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "inputText": "={{ $json.output.Critiques }}",
+        "options": {
+          "categories": "Positive, Neutral, Negative",
+          "systemPromptTemplate": "You are highly intelligent and accurate sentiment analyzer. Analyze the sentiment of the provided text. Categorize it into one of the following: {categories}. Use the provided formatting instructions. Only output the JSON give out put in english only if its not in enlish translate it and give me."
+        }
+      },
+      "id": "eb853885-816d-4df7-b5ac-900fa89d3df9",
+      "name": "Sentiment Analysis",
+      "type": "@n8n/n8n-nodes-langchain.sentimentAnalysis",
+      "position": [
+        2720,
+        140
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        2460,
+        380
+      ],
+      "id": "248b5e3e-66d1-4776-a303-95a047642e26",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "ek6Q5qOjGukmc2s4",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        2840,
+        360
+      ],
+      "id": "5577f01f-62a9-4b1c-bd68-51f95cfd8cdb",
+      "name": "Google Gemini Chat Model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "ek6Q5qOjGukmc2s4",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Get Single review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limit1": {
+      "main": [
+        [
+          {
+            "node": "Get Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get rows": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Limit1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get reviews": {
+      "main": [
+        [
+          {
+            "node": "Extract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract review": {
+      "main": [
+        [
+          {
+            "node": "Information Extractor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Parameters": {
+      "main": [
+        [
+          {
+            "node": "Get reviews",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Get rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Single review": {
+      "main": [
+        [
+          {
+            "node": "Extract review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sentiment Analysis": {
+      "main": [
+        [
+          {
+            "node": "Update sheet",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Update sheet",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Update sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Information Extractor": {
+      "main": [
+        [
+          {
+            "node": "Sentiment Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Test workflow’": {
+      "main": [
+        [
+          {
+            "node": "Set Parameters",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Information Extractor",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Sentiment Analysis",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "86159953-a600-4e89-babb-d4e4783dc226",
+  "meta": {
+    "templateId": "2792",
+    "templateCredsSetupCompleted": true,
+    "instanceId": "71ab28f7d7f2514b40793eeea846fa47e37a01971ff2cf9cdea09c72ce4266a9"
+  },
+  "id": "OXmnw3N2AoftzqGZ",
+  "tags": []
+}

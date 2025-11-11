@@ -1,0 +1,853 @@
+{
+  "name": "HR Agent 1",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -660,
+        140
+      ],
+      "id": "b03eb748-ac87-46f1-b4bf-58f0d57dc10b",
+      "name": "Telegram Trigger",
+      "webhookId": "366feadf-056d-4707-9162-3a9e4361e98a",
+      "credentials": {
+        "telegramApi": {
+          "id": "QKGQs4zFLKYIkpRl",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1c3e4bae-65f1-4de8-bfaa-da71e5ecc0da",
+              "name": "text",
+              "value": "={{ $json.message.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        0,
+        0
+      ],
+      "id": "20fad94d-9edb-4af8-a63f-dc9ea113683c",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $json.message.voice.file_id }}"
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -20,
+        300
+      ],
+      "id": "c8b9469d-16e0-4b6e-922a-55d5d1a2b445",
+      "name": "Telegram",
+      "webhookId": "1db83d4d-0d60-4882-83e9-c4f44b5d65f5",
+      "credentials": {
+        "telegramApi": {
+          "id": "QKGQs4zFLKYIkpRl",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "operation": "transcribe",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        500,
+        300
+      ],
+      "id": "13e1a587-b9bd-4498-a23a-738c07385b66",
+      "name": "OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "vX5FeLdMQ9wUQoaq",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.text }}",
+        "options": {
+          "systemMessage": "=<AgentInstructions>\n  <Role>\n    <Name>Event Manager Agent</Name>\n    <Description>\n      This agent manages Google Calendar events—searches for existing events, creates new ones, and updates them as requested.\n    </Description>\n    <currentDate>{{$now}}</currentDate>\n  </Role>\n  <Goal>\n    <Primary>\n      Efficiently handle user requests for calendar events (search, create, update) with proper date formatting.\n    </Primary>\n  </Goal>\n  <Instructions>\n    <!-- Tools Section -->\n    <Instruction>\n      Tools Available:\n      1. Search Google Calendar\n      2. Create Google Calendar Event\n      3. Update Google Calendar Event\n      4. Search CRM in Airtable\n      5. Send Emails\n    </Instruction>\n    <!-- General Behavior -->\n    <Instruction>\n      Always check user availability and existing events before creating or updating an event.\n    </Instruction>\n    <Instruction>\n      Provide clear responses and confirm event details (time, date, attendees, purpose).\n    </Instruction>\n    <Instruction>\n      Utilize the CRM (Search CRM in Airtable) to find attendee contact information and, if needed, use \"Send Emails\" to share event details or updates directly with them.\n    </Instruction>\n    <!-- Date & Time Handling -->\n    <Instruction>\n      For a single-date request (e.g., \"What do I have on Monday?\")\n      - Use StartDate as \"YYYY-MM-DD 00:00:00\"\n      - Use EndDate as \"YYYY-MM-DD 23:59:59\"\n    </Instruction>\n    <Instruction>\n      For a range request (e.g., \"From Monday to Wednesday\");\n      - Use the first day of the range with \"00:00:00\" as StartDate\n      - Use the last day of the range with \"23:59:59\" as EndDate\n    </Instruction>\n    <!-- Event Management Steps -->\n    <Instruction>\n      1. Parse user request for date(s), time(s), and attendee(s).\n      2. Check availability or existing events with the \"Search Google Calendar\" tool.\n      3. If a conflict exists, offer alternative times.\n      4. On confirmation, create/update the event details (time, title, attendees, notes) using the appropriate tool.\n      5. If attendee contact information is needed, retrieve it from the CRM (Search CRM in Airtable) and then use the \"Send Emails\" tool to share the event details.\n      6. Provide a succinct response to the user with the final event details or status.\n    </Instruction>\n  </Instructions>\n\n  <Role>\n    <Name>LinkedIn Agent</Name>\n    <Trigger>run the linkedin agent</Trigger>\n    <Description>\n      This agent **exclusively** extracts and fills information from LinkedIn profiles into a spreadsheet when explicitly triggered by the phrase \"run the linkedin agent\".\n    </Description>\n    <Goal>\n      <Primary>\n        Extract and store professional details from LinkedIn URLs into a structured spreadsheet format **only when specifically requested**.\n      </Primary>\n    </Goal>\n    <Instructions>\n      <!-- Tools Section -->\n      <Instruction>\n        Tools Available:\n        1. **ExtractLinkedInProfile**: Retrieves information from a given LinkedIn URL.\n        2. **UpdateSheet**: Stores the extracted LinkedIn data in a structured spreadsheet.\n      </Instruction>\n      <!-- Execution Rules -->\n      <Instruction>\n        **Activation**: Only trigger when the user explicitly states \"run the linkedin agent\".\n      </Instruction>\n      <Instruction>\n        **Input Handling**: Ignore any non-LinkedIn-related requests. If no LinkedIn URL is provided after activation, ask: \"Please provide a LinkedIn profile URL.\"\n      </Instruction>\n      <!-- Workflow -->\n      <Instruction>\n        1. Wait for explicit trigger phrase and LinkedIn URL input.\n        2. Extract profile details (Name, Position, Company, Location, Skills).\n        3. Format data and confirm with user before saving.\n        4. Use **UpdateSheet** only after explicit user confirmation.\n      </Instruction>\n    </Instructions>\n  </Role>\n\n  <Examples>\n    <Example>\n      <UserInput>run the linkedin agent</UserInput>\n      <AgentOutput>\n        Please provide a LinkedIn profile URL to extract information.\n      </AgentOutput>\n    </Example>\n    <Example>\n      <UserInput>https://linkedin.com/in/johndoe</UserInput>\n      <AgentOutput>\n        Sure! Here’s what I found:\n        - **Name**: John Doe\n        - **Current Position**: Senior Software Engineer\n        - **Company**: Google\n        - **Location**: San Francisco, CA\n        - **Skills**: Python, Machine Learning, Cloud Computing  \n        \n        Would you like me to store this information in the spreadsheet?\n      </AgentOutput>\n    </Example>\n  </Examples>\n</AgentInstructions>"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        880,
+        0
+      ],
+      "id": "c1316bdc-a7a4-4b31-9e33-91841926b423",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        780,
+        200
+      ],
+      "id": "4a94050d-583c-4788-b282-6c0677f3df59",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "vX5FeLdMQ9wUQoaq",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ $json.output }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1500,
+        0
+      ],
+      "id": "8e6d85cf-76ef-4072-8ff1-40526e235a45",
+      "name": "Telegram1",
+      "webhookId": "2ce1c2c9-a9ba-4835-99f4-62fb452d6d19",
+      "credentials": {
+        "telegramApi": {
+          "id": "QKGQs4zFLKYIkpRl",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Telegram Trigger').item.json.message.chat.id }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        920,
+        200
+      ],
+      "id": "8b747a02-aed5-41f4-86c5-4a89c0906ac3",
+      "name": "Window Buffer Memory"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.message.text }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "exists",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "text"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "d91ebf6d-ca72-4531-90c0-0a655aadbac2",
+                    "leftValue": "={{ $json.message.voice.file_id }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "exists",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "voice"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -340,
+        140
+      ],
+      "id": "f19b0a7e-c79a-4dc1-bccb-b88d60e92d00",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Searches google calendar events",
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "adityapawar327@gmail.com",
+          "mode": "list",
+          "cachedResultName": "adityapawar327@gmail.com"
+        },
+        "timeMin": "={{ $fromAI('startTime','the start time and day of events being searched') }}",
+        "timeMax": "={{ $fromAI('endTime','the end time and day of events being searched') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        60,
+        1200
+      ],
+      "id": "e7a0475e-072c-4a28-a6be-41c3c4ebf32c",
+      "name": "Searches Google Calendar",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "NiVOz5aRRHbKLG7T",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Creates Google Calendar events",
+        "calendar": {
+          "__rl": true,
+          "value": "adityapawar327@gmail.com",
+          "mode": "list",
+          "cachedResultName": "adityapawar327@gmail.com"
+        },
+        "start": "={{ $fromAI('startTime','the start time and day of events being created') }}",
+        "end": "={{ $fromAI('endTime','the end time and day of events being created') }}",
+        "additionalFields": {
+          "summary": "={{ $fromAI('eventName','the name of the event being created') }}"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        200,
+        1200
+      ],
+      "id": "fc42971f-f299-4d21-8236-877f7e797a02",
+      "name": "Add Google Calendar",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "NiVOz5aRRHbKLG7T",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Updates google calendar events",
+        "operation": "update",
+        "calendar": {
+          "__rl": true,
+          "value": "adityapawar327@gmail.com",
+          "mode": "list",
+          "cachedResultName": "adityapawar327@gmail.com"
+        },
+        "eventId": "={{ $fromAI('eventID','the ID of the event needing updated') }}",
+        "updateFields": {
+          "description": "={{ $fromAI('eventDescription','the new event description') }}",
+          "end": "={{ $fromAI('eventEnd','the new event end date and time') }}",
+          "start": "={{ $fromAI('eventStart','the new event start date and time') }}",
+          "summary": "={{ $fromAI('eventName','the new event name') }}"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        340,
+        1200
+      ],
+      "id": "8c1d302f-df95-421d-b178-a0d3ad691904",
+      "name": "Update Google Calendar",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "NiVOz5aRRHbKLG7T",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "app6m1ityONJ71nuY",
+          "mode": "list",
+          "cachedResultName": "CRM Sheet",
+          "cachedResultUrl": "https://airtable.com/app6m1ityONJ71nuY"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblL1xgbHb96cs94U",
+          "mode": "list",
+          "cachedResultName": "People",
+          "cachedResultUrl": "https://airtable.com/app6m1ityONJ71nuY/tblL1xgbHb96cs94U"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtableTool",
+      "typeVersion": 2.1,
+      "position": [
+        680,
+        1040
+      ],
+      "id": "8b701a2c-dc2a-4ea7-b632-60f7c6ab4b27",
+      "name": "Search CRM",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "7FizsB7WWCgaGqnN",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $fromAI('toAddress','email address of event invite') }}",
+        "subject": "={{ $fromAI('emailSubject') }}",
+        "emailType": "text",
+        "message": "={{ $fromAI('emailBody','email body inviting user to an event') }}",
+        "options": {
+          "appendAttribution": false,
+          "senderName": "Aditya Pawar"
+        }
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.1,
+      "position": [
+        780,
+        860
+      ],
+      "id": "1ae8525f-0290-4c52-9d8d-b89d11047b54",
+      "name": "Send Mail",
+      "webhookId": "cf6f398b-df5e-4b2f-b4b0-6301165e94f4",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "i5QOKJjYO8tX15NG",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Call this tool to get emails from inbox. To filter, it will need date/time info for \"received after\" and \"received before\"",
+        "operation": "getAll",
+        "limit": 25,
+        "filters": {
+          "labelIds": [
+            "INBOX"
+          ],
+          "readStatus": "both",
+          "receivedAfter": "={{ $fromAI(\"after_date\", \"the date that emails were received after\") }}",
+          "receivedBefore": "={{ $fromAI(\"before_date\", \"the date that emails were received before\") }}"
+        }
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.1,
+      "position": [
+        900,
+        860
+      ],
+      "id": "ad7f30d2-18eb-4f36-a740-c23d2b335ae9",
+      "name": "Show Mail",
+      "webhookId": "f2c616fd-d477-47ac-8d7a-9dcb87ab1b51",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "i5QOKJjYO8tX15NG",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.toolWikipedia",
+      "typeVersion": 1,
+      "position": [
+        1040,
+        740
+      ],
+      "id": "039e2d85-3474-4285-88ee-a4279bf772b5",
+      "name": "Wikipedia"
+    },
+    {
+      "parameters": {
+        "resource": "all",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.hackerNewsTool",
+      "typeVersion": 1,
+      "position": [
+        1180,
+        640
+      ],
+      "id": "10f9e7ae-5bb1-474f-aa19-ea17c9bd84af",
+      "name": "Hacker News"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.toolCalculator",
+      "typeVersion": 1,
+      "position": [
+        1320,
+        540
+      ],
+      "id": "fac31b77-4a51-459c-83f4-15c20af7181d",
+      "name": "Calculator"
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "base": {
+          "__rl": true,
+          "value": "app6m1ityONJ71nuY",
+          "mode": "list",
+          "cachedResultName": "CRM Sheet",
+          "cachedResultUrl": "https://airtable.com/app6m1ityONJ71nuY"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblL1xgbHb96cs94U",
+          "mode": "list",
+          "cachedResultName": "People",
+          "cachedResultUrl": "https://airtable.com/app6m1ityONJ71nuY/tblL1xgbHb96cs94U"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "id",
+            "Name",
+            "Email",
+            "Notes",
+            "Company Name"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": false
+            },
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Notes",
+              "displayName": "Notes",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Company Name",
+              "displayName": "Company Name",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtableTool",
+      "typeVersion": 2.1,
+      "position": [
+        540,
+        1040
+      ],
+      "id": "d5d006d6-0461-413b-a427-b2c620455033",
+      "name": "Create or Update Airtable",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "7FizsB7WWCgaGqnN",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolSerpApi",
+      "typeVersion": 1,
+      "position": [
+        1460,
+        460
+      ],
+      "id": "9a6e6850-9f5f-4485-9dc6-33deb0add438",
+      "name": "SerpAPI",
+      "credentials": {
+        "serpApi": {
+          "id": "5qN2icPTENVXkwTy",
+          "name": "SerpAPI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "LinkedInData",
+        "description": "Call this agent when someone say please fill all the details for the given people in the google sheet using the LinkedIn",
+        "workflowId": {
+          "__rl": true,
+          "value": "BTLw0U1yiDsYe3N4",
+          "mode": "list",
+          "cachedResultName": "LinkedIn Agent - HR Agent 2"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2,
+      "position": [
+        1600,
+        380
+      ],
+      "id": "b18baa04-e199-471e-9c9b-4ccbd3f57a9c",
+      "name": "LinkedIn Agent"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram": {
+      "main": [
+        [
+          {
+            "node": "OpenAI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Telegram1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Window Buffer Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Searches Google Calendar": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add Google Calendar": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Google Calendar": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search CRM": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Mail": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Show Mail": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wikipedia": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hacker News": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculator": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create or Update Airtable": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SerpAPI": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LinkedIn Agent": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "9e4b3c01-219a-48a4-8b55-8db962d33620",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "71ab28f7d7f2514b40793eeea846fa47e37a01971ff2cf9cdea09c72ce4266a9"
+  },
+  "id": "Q7tJvChTzey5BCIm",
+  "tags": []
+}

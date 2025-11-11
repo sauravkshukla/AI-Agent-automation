@@ -1,0 +1,616 @@
+{
+  "name": "Application PDF Screening",
+  "nodes": [
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash",
+        "options": {}
+      },
+      "id": "e77fbc32-5ee9-49b4-93d5-f2ffda134b08",
+      "name": "Google Gemini Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "position": [
+        780,
+        300
+      ],
+      "typeVersion": 1,
+      "credentials": {
+        "googlePalmApi": {
+          "id": "ek6Q5qOjGukmc2s4",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Application Form').item.json['E-mail'] }}",
+        "subject": "We Have Received Your CV",
+        "message": "=Dear {{ $('Application Form').item.json['Full Name'] }},\n\nThank you for submitting your CV. We have successfully received it and will be reviewing your application shortly.\nOur team will reach out to you if any further information is required.\n\nWe appreciate your interest in joining Nexus AI.\n\nBest regards,\nTeam Nexus\n\n",
+        "options": {}
+      },
+      "id": "9e24167f-cac6-4b98-95da-30065510d79a",
+      "name": "Confirmation of CV Submission",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        1380,
+        240
+      ],
+      "webhookId": "954756dc-2946-4b78-b208-06f3df612ab5",
+      "typeVersion": 2.1,
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "i5QOKJjYO8tX15NG",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "adityapawar327@gmail.com",
+        "subject": "New Candidate CV Awaiting Review",
+        "message": "=Subject: New Candidate CV Submission for Review\n\nDear HR Team,\n\nWe would like to inform you that a new CV has been successfully received in our system. Kindly review the candidate’s details at your earliest convenience.\n\nCandidate Details:\n\nFull Name: {{ $('Application Form').item.json['Full Name'] }}\n\nE-mail: {{ $('Application Form').item.json['E-mail'] }}\n\nPhone Number : {{ $('Application Form').item.json['Phone Number'] }}\n\nLinkedIn Profile: {{ $('Application Form').item.json.Linkedin }}\n\nExpectation: {{ $('Application Form').item.json.Expectation }} LPA\n\nAI Analysis & Rating: {{ $('Using AI Analysis & Rating').item.json.text }}\n\n\nBest regards,\nAutomated CV Screening System",
+        "options": {}
+      },
+      "id": "ff49d370-b4eb-4426-b396-763455e647e7",
+      "name": "Inform HR New CV Received",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        1180,
+        240
+      ],
+      "webhookId": "e969a9f5-631b-4719-a4f6-87e6063cef6a",
+      "typeVersion": 2.1,
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "i5QOKJjYO8tX15NG",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.text }}",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=Rule 1: Do not exceed a maximum of 75 words. As an AI with advanced capabilities in talent acquisition and human resources, your task is to conduct a detailed analysis of a candidate's resume against a specific job description. You will help hiring professionals assess the alignment between the candidate's skills, experience, qualifications, and the job requirements. Your insights will assist employers in understanding the candidate's suitability. The analysis should be in English. Our company hires technical talents and values skills and college marks.\n\nYour analysis should follow this format:\n\nCompatibility Rating: Provide an overall compatibility rating on a scale from 1 (not compatible) to 10 (perfect fit). Explain your rating.\n\nRecommendation: Based on your analysis, recommend whether the candidate should be considered for an interview. Provide a clear and reasoned explanation.\n\nYour analysis should be professional, insightful, and focused on the candidate's potential fit within the role and team. Analyze the compatibility of the following candidate's resume with the provided job description. Use your expertise to provide a thorough evaluation.\nAdditionally, specify the languages and skills the candidate is proficient in.\n\ngive compatibilty rating and leave a line space then write the content\n\nend the end mention should we schedule a meeting yes or no\n\nJob description: \"{{ $('Application Form').item.json['Job Role'] }}\" Resume: {{ $json.text }}\n"
+            }
+          ]
+        }
+      },
+      "id": "8479fa4c-10bc-4914-896d-f5b00d063fa8",
+      "name": "Using AI Analysis & Rating",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "position": [
+        660,
+        120
+      ],
+      "typeVersion": 1.5
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "binaryPropertyName": "Your_Resume_CV",
+        "options": {}
+      },
+      "id": "da0fd18b-2420-471e-b930-9aabc45bc2ca",
+      "name": "Convert Binary to Json",
+      "type": "n8n-nodes-base.extractFromFile",
+      "position": [
+        380,
+        240
+      ],
+      "retryOnFail": false,
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "formTitle": "Application for Software Engineer Position",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Full Name",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "E-mail",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Expectation",
+              "placeholder": "8-12 LPA",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Linkedin",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Job Role",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Software Engineer"
+                  },
+                  {
+                    "option": "Quality Assurance Engineer"
+                  },
+                  {
+                    "option": "Web Developer"
+                  },
+                  {
+                    "option": "Data Engineer"
+                  },
+                  {
+                    "option": "DevOps Engineer"
+                  }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Date of Birth",
+              "fieldType": "date",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Phone Number",
+              "fieldType": "number",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Your Resume/CV",
+              "fieldType": "file",
+              "acceptFileTypes": ".pdf",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "bc5480c1-d9c2-414b-8cd4-0b3e49d4dde9",
+      "name": "Application Form",
+      "type": "n8n-nodes-base.formTrigger",
+      "position": [
+        140,
+        240
+      ],
+      "webhookId": "0cd422d3-e69f-4ec0-92ab-05362808c4da",
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1l-jRN51xHjxz6OGW6BPcZjhqFIoKmIw4bPip4nD5b18",
+          "mode": "list",
+          "cachedResultName": "Cv Review",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1l-jRN51xHjxz6OGW6BPcZjhqFIoKmIw4bPip4nD5b18/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1l-jRN51xHjxz6OGW6BPcZjhqFIoKmIw4bPip4nD5b18/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "CV": "={{ $('Application Form').item.json['Your Resume/CV'][0].filename }}",
+            "AI Rating": "={{ $json.text }}",
+            "Full Name": "={{ $('Application Form').item.json['Full Name'] }}",
+            "E-Mail": "={{ $('Application Form').item.json['E-mail'] }}",
+            "Submit Date": "={{ $('Application Form').item.json.submittedAt }}",
+            "linkedin_url": "={{ $('Application Form').item.json.Linkedin }}",
+            "Job Role": "={{ $('Application Form').item.json['Job Role'] }}",
+            "Phone Number": "={{ $('Application Form').item.json['Phone Number'] }}",
+            "Date of Birth": "={{ $('Application Form').item.json['Date of Birth'] }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "CV",
+              "displayName": "CV",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Full Name",
+              "displayName": "Full Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "E-Mail",
+              "displayName": "E-Mail",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Phone Number",
+              "displayName": "Phone Number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Date of Birth",
+              "displayName": "Date of Birth",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Submit Date",
+              "displayName": "Submit Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "linkedin_url",
+              "displayName": "linkedin_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Job Role",
+              "displayName": "Job Role",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "AI Rating",
+              "displayName": "AI Rating",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Questions",
+              "displayName": "Questions",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "d2dfbf1e-8d88-49e6-940d-e1717de97b30",
+      "name": "Candidate Lists",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        980,
+        240
+      ],
+      "typeVersion": 4.5,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "SDIBS9Lf4lBMTWwE",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "from": "+14782236068",
+        "to": "+917738561876",
+        "message": "=Dear HR Team,\n\nCould you please check the status of the candidate {{ $('Application Form').item.json['Full Name'] }} for the {{ $('Application Form').item.json['Job Role'] }} role ? Kindly let me know if you require any further information. You can reach him at {{ $('Application Form').item.json['Phone Number'] }} or via email at {{ $('Application Form').item.json['E-mail'] }}. \n\nThank you. \nBest regards, \nNexus AI Automation Team",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [
+        1600,
+        240
+      ],
+      "id": "d0df9b0a-6809-4c1c-ac6e-3194ff30520d",
+      "name": "Twilio",
+      "credentials": {
+        "twilioApi": {
+          "id": "PVOT4GeOuMGULpz0",
+          "name": "Twilio account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.text }}",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=\"As an AI interview assistant, your task is to generate a set of 10 questions to assess a candidate's technical and problem-solving skills based on the given content. Categorize the questions into three levels of difficulty: easy, medium, and hard. The questions should be relevant to the candidate's experience and skills as outlined in the provided content. Ensure a logical progression from basic to complex concepts.\n\nSeparate the questions well and add a numeric marking from 1-10 for easy readbility\n\nsimply give question with no description\n\n\"\n\nContent: {{ $json.text }}\n\n"
+            }
+          ]
+        }
+      },
+      "id": "73bc5ab3-77c1-4b6a-8b2a-6feda3af64ec",
+      "name": "Generate Questions",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "position": [
+        640,
+        640
+      ],
+      "typeVersion": 1.5
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        740,
+        880
+      ],
+      "id": "1cdd26ac-34ae-4eb0-a346-f5603ff47701",
+      "name": "Google Gemini Chat Model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "ek6Q5qOjGukmc2s4",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1ccxryOFBQz4haUuHPt_TlyNoMu0qzVniU1m-yxjmxlo",
+          "mode": "list",
+          "cachedResultName": "Questions",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1ccxryOFBQz4haUuHPt_TlyNoMu0qzVniU1m-yxjmxlo/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1ccxryOFBQz4haUuHPt_TlyNoMu0qzVniU1m-yxjmxlo/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Name": "={{ $('Application Form').item.json['Full Name'] }}",
+            "Job Role": "={{ $('Application Form').item.json['Job Role'] }}",
+            "Email": "={{ $('Application Form').item.json['E-mail'] }}",
+            "Phone": "={{ $('Application Form').item.json['Phone Number'] }}",
+            "Questions": "={{ $json.text }}"
+          },
+          "matchingColumns": [
+            "Name"
+          ],
+          "schema": [
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Job Role",
+              "displayName": "Job Role",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Phone",
+              "displayName": "Phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Questions",
+              "displayName": "Questions",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1020,
+        640
+      ],
+      "id": "97b7cb5b-ee3f-425a-bc41-728525581d64",
+      "name": "Questions",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "SDIBS9Lf4lBMTWwE",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Candidate Lists": {
+      "main": [
+        [
+          {
+            "node": "Inform HR New CV Received",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Application Form": {
+      "main": [
+        [
+          {
+            "node": "Convert Binary to Json",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert Binary to Json": {
+      "main": [
+        [
+          {
+            "node": "Using AI Analysis & Rating",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Generate Questions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Using AI Analysis & Rating",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Inform HR New CV Received": {
+      "main": [
+        [
+          {
+            "node": "Confirmation of CV Submission",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Using AI Analysis & Rating": {
+      "main": [
+        [
+          {
+            "node": "Candidate Lists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirmation of CV Submission": {
+      "main": [
+        [
+          {
+            "node": "Twilio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Generate Questions",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Questions": {
+      "main": [
+        [
+          {
+            "node": "Questions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Questions": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "93eb4ae0-3380-4412-9700-49a8f480d8d7",
+  "meta": {
+    "templateId": "2632",
+    "templateCredsSetupCompleted": true,
+    "instanceId": "71ab28f7d7f2514b40793eeea846fa47e37a01971ff2cf9cdea09c72ce4266a9"
+  },
+  "id": "dTQLti23gf0Zr9KB",
+  "tags": []
+}
